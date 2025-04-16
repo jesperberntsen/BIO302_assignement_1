@@ -1,0 +1,187 @@
+---
+title: "assignement1"
+format: html
+editor: visual
+---
+
+## 
+
+```{r}
+
+library(tidyverse)
+library(here)
+library(readxl)
+library(car)
+library(emmeans)
+library(janitor)
+library(performance)
+library(gt)
+```
+
+```{r}
+# Read the raw data within the seagrass file (excel)
+
+clean_data <- read_excel(here("seagrass/Clean_data_.xlsx")) |> 
+  clean_names()
+
+```
+
+###Barplot - from article
+
+```{r}
+# Make a barplot of the average seagrass shoot density in digging and control plots at each sampling occasion across T1–T4 (1, 3, 6, 12 months)
+
+clean_data |> 
+  ggplot(aes(x = time, y = shoots_m2, fill = plot)) +
+  geom_bar(stat = "identity", position = "dodge") + 
+  labs(x = "Time", 
+       y = "Average number of shoots m^-2",
+       fill = "") +
+  theme_minimal()
+```
+
+```{r}
+clean_data |>
+  group_by(time, plot) |>
+  summarise(
+    mean_shoots = mean(shoots_m2, na.rm = TRUE),
+    sd_shoots = sd(shoots_m2, na.rm = TRUE),
+    n = n(),
+    se = sd_shoots / sqrt(n)
+  ) |>
+  ggplot(aes(x = time, y = mean_shoots, fill = plot)) +
+  geom_col(position = position_dodge(0.9), width = 0.8) +
+  geom_errorbar(aes(ymin = mean_shoots - se, ymax = mean_shoots + se),
+                position = position_dodge(0.9), width = 0.2) +
+  labs(
+    x = "Time",
+    y = expression("Shoot density (shoots " * m^{-2} * ")"),
+    fill = "Treatment"
+  ) +
+  scale_fill_manual(
+    values = c("Digging" = "steelblue", "Control" = "grey70")
+  ) +  
+  theme_minimal(base_size = 12) +
+  theme(
+    legend.position = "top",
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.title = element_text(face = "bold"),
+    axis.text = element_text(color = "black")
+  )
+
+```
+
+
+
+```{r}
+# Summaries for percent_epiphytes by factor variable Plot
+
+sum_plot_epi <- clean_data |> 
+  group_by(plot) |> 
+  summarise(mean = mean(percent_epiphytes), 
+            sd = sd(percent_epiphytes), 
+            n = n(), 
+            min(percent_epiphytes),
+            max(percent_epiphytes),
+            variance = var(percent_epiphytes))
+sum_plot_epi
+```
+
+###Anova - Percent Epiphytes \~ plot \* time
+
+```{r}
+# Making an ANOVA model
+
+mod1 <- aov(percent_epiphytes ~ plot * time, data = clean_data)
+
+# Checking the performance of the anova model
+summary(mod1)
+check_model(mod1)
+
+```
+
+```{r}
+# Post-hoc: Estimated marginal means
+emmeans(mod1, pairwise ~ plot)
+```
+
+```{r}
+# Comparing means across groups
+emmeans(mod1, pairwise ~ time)
+```
+
+```{r}
+# Comparing means across time within grops
+emmeans(mod1, pairwise ~ time | plot)
+
+```
+
+```{r}
+# Comparing means across groups over time (pairwise)
+emmeans(mod1, pairwise ~ plot | time)
+```
+
+```{r}
+# Levene's test for homogeneity of variance for X Epiphytes against Plot
+leveneTest(percent_epiphytes ~ plot, data = clean_data)
+
+```
+
+```{r}
+# Levene's test for homogeneity of variance for X Epiphytes against time
+leveneTest(percent_epiphytes ~ time, data = clean_data)
+
+```
+
+
+```{r}
+# Pairwise comparisons using Tukeys test within groups across time aswell as across groups
+TukeyHSD(mod1)
+
+```
+
+
+
+###Table
+
+```{r}
+
+
+# Oppsummer og formatter data
+table_data <- clean_data |>
+  group_by(time, plot) |>
+  summarise(
+    mean = mean(percent_epiphytes, na.rm = TRUE),
+    sd = sd(percent_epiphytes, na.rm = TRUE),
+    n = n(),
+    se = sd / sqrt(n),
+    .groups = "drop"
+  ) |>
+  mutate(
+    value = sprintf("%.1f ± %.1f", mean, sd)
+  ) |>
+  select(time, plot, value) |>
+  pivot_wider(names_from = plot, values_from = value)
+
+# Lag tabellen i riktig rekkefølge
+table_data |>
+  gt() |>
+  cols_label(
+    time = "Time",
+    Digging = "Digging",
+    Control = "Control"
+  ) |>
+  tab_header(
+    title = "Table 1",
+    subtitle = md("Epiphyte percentage cover in digging and control plots  
+    for the disturbance experiments at Inhaca Island across T1–T4")
+  ) |>
+  tab_options(
+    table.font.size = 12,
+    data_row.padding = px(5),
+    column_labels.font.weight = "bold"
+  )
+
+
+```

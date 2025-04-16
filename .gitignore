@@ -1,0 +1,10 @@
+.Rproj.user
+.Rhistory
+.Rdata
+.httr-oauth
+.DS_Store
+.quarto
+shinyapp/
+readssb/
+doi_10_5061_dryad_wh70rxwrb__v20221002/
+*.pdf
