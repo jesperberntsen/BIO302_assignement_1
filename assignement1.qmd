@@ -88,61 +88,6 @@ sum_plot_epi <- clean_data |>
 sum_plot_epi
 ```
 
-###Anova - Percent Epiphytes \~ plot \* time
-
-```{r}
-# Making an ANOVA model
-
-mod1 <- aov(percent_epiphytes ~ plot * time, data = clean_data)
-
-# Checking the performance of the anova model
-summary(mod1)
-check_model(mod1)
-
-```
-
-```{r}
-# Post-hoc: Estimated marginal means
-emmeans(mod1, pairwise ~ plot)
-```
-
-```{r}
-# Comparing means across groups
-emmeans(mod1, pairwise ~ time)
-```
-
-```{r}
-# Comparing means across time within grops
-emmeans(mod1, pairwise ~ time | plot)
-
-```
-
-```{r}
-# Comparing means across groups over time (pairwise)
-emmeans(mod1, pairwise ~ plot | time)
-```
-
-```{r}
-# Levene's test for homogeneity of variance for X Epiphytes against Plot
-leveneTest(percent_epiphytes ~ plot, data = clean_data)
-
-```
-
-```{r}
-# Levene's test for homogeneity of variance for X Epiphytes against time
-leveneTest(percent_epiphytes ~ time, data = clean_data)
-
-```
-
-
-```{r}
-# Pairwise comparisons using Tukeys test within groups across time aswell as across groups
-TukeyHSD(mod1)
-
-```
-
-
-
 ###Table
 
 ```{r}
@@ -185,3 +130,72 @@ table_data |>
 
 
 ```
+
+
+
+###Anova - Percent Epiphytes \~ plot \* time
+
+Attemt to recreate the anova model from the article, and reproducing the key numbers from the first 5 pages of the supplamentary document: "Digging_experiment_Epiphytes.docx" from https://doi.org/10.5061/dryad.k98sf7m8v
+
+```{r}
+# Making an ANOVA model
+
+mod1 <- aov(percent_epiphytes ~ plot * time, data = clean_data)
+
+# Anova table with type III sum of squares for X_Epiphytes by Plot*Time
+summary(mod1)
+
+# Checking the performance of the anova model
+check_model(mod1)
+
+```
+
+```{r}
+# Estimated Marginal Means for X_Epiphytes by Plot
+emmeans(mod1, pairwise ~ plot)
+```
+
+```{r}
+# Estimated Marginal Means for X_Epiphytes by Time
+emmeans(mod1, pairwise ~ time)
+```
+
+```{r}
+# Estimated Marginal Means for X_Epiphytes by Plot*Time
+emmeans(mod1, pairwise ~ time | plot)
+
+```
+
+```{r}
+# Comparing means across groups over time (pairwise)
+emmeans(mod1, pairwise ~ plot | time)
+```
+
+```{r}
+# Levene's test for homogenity of variances (center=mean) for X_Epiphytes against Plot
+leveneTest(percent_epiphytes ~ plot, data = clean_data)
+
+```
+
+```{r}
+# Levene's test for homogenity of variances (center=mean) for X_Epiphytes against Time
+leveneTest(percent_epiphytes ~ time, data = clean_data)
+
+```
+
+
+```{r}
+# Pairwise comparisons using Tukeys test within groups across time aswell as across groups
+TukeyHSD(mod1)
+
+```
+
+
+
+
+```{r}
+usethis::use_mit_license("Jesper Berntsen")
+```
+
+
+
